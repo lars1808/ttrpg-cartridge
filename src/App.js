@@ -102,9 +102,39 @@ if (event.target.classList.contains('wiki-link')) {
           if (result) {
             const rollValue = result.total;
             
-            // Find matching row
-            const rows = table.querySelectorAll('tbody tr');
+// Find matching row - try tbody first, then all rows
+            let rows = table.querySelectorAll('tbody tr');
+            if (rows.length === 0) {
+              // If no tbody, get all rows except the header
+              rows = Array.from(table.querySelectorAll('tr')).slice(1);
+            }
+            
             let matchedRow = null;
+            
+            rows.forEach(row => {
+              const firstCell = row.cells[0]?.textContent.trim();
+              
+              // Check for range (e.g., "1-2")
+              const rangeMatch = firstCell.match(/(\d+)-(\d+)/);
+              if (rangeMatch) {
+                const min = parseInt(rangeMatch[1]);
+                const max = parseInt(rangeMatch[2]);
+                if (rollValue >= min && rollValue <= max) {
+                  matchedRow = row;
+                }
+              }
+              // Check for exact match (e.g., "3")
+              else if (parseInt(firstCell) === rollValue) {
+                matchedRow = row;
+              }
+            });
+            
+            // Highlight the matched row
+            if (matchedRow) {
+              matchedRow.classList.add('highlighted-row');
+              matchedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              event.target.textContent = '✕ Clear';
+            }
             
             rows.forEach(row => {
               const firstCell = row.cells[0]?.textContent.trim();
