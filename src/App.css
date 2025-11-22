@@ -540,3 +540,14 @@ body {
 .rollable-table tbody tr.highlighted-row td {
   border-color: #fbbf24;
 }
+
+/* Also handle tables without tbody */
+.rollable-table tr.highlighted-row {
+  background-color: #fef3c7 !important;
+  border-left: 4px solid #f59e0b !important;
+  font-weight: 600;
+}
+
+.rollable-table tr.highlighted-row td {
+  border-color: #fbbf24 !important;
+}
