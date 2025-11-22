@@ -9,7 +9,8 @@ marked.setOptions({
 
 export function parseCartridge(fileContent) {
   // Split the file into narrative and definitions
-  const definitionsMatch = fileContent.match(/```definitions\n([\s\S]*?)```/);
+  // This regex handles both \n and \r\n line endings
+  const definitionsMatch = fileContent.match(/```definitions[\r\n]+([\s\S]*?)```/);
   
   let narrative = fileContent;
   let definitions = {};
@@ -18,15 +19,18 @@ export function parseCartridge(fileContent) {
     // Extract the YAML content
     const yamlContent = definitionsMatch[1];
     
-    // Remove the definitions block from the narrative
-    narrative = fileContent.replace(/```definitions\n[\s\S]*?```/, '').trim();
+    // Remove the definitions block from the narrative (including the backticks)
+    narrative = fileContent.replace(/```definitions[\r\n]+[\s\S]*?```/, '').trim();
     
     // Parse the YAML
     try {
       definitions = yaml.load(yamlContent) || {};
+      console.log('Parsed definitions:', definitions); // Debug log
     } catch (error) {
       console.error('Error parsing YAML:', error);
     }
+  } else {
+    console.log('No definitions block found'); // Debug log
   }
   
   return { narrative, definitions };
