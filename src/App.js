@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { parseCartridge, enhanceMarkdown, extractTableOfContents, rollDice } from './MarkdownParser';
+import Toast from './Toast';
 
 function App() {
   const [fileContent, setFileContent] = useState('');
@@ -9,7 +10,9 @@ function App() {
   const [definitions, setDefinitions] = useState({});
   const [tableOfContents, setTableOfContents] = useState([]);
   const [contextCard, setContextCard] = useState(null);
-  const [rollHistory, setRollHistory] = useState([]);
+const [rollHistory, setRollHistory] = useState([]);
+const [activeToast, setActiveToast] = useState(null);
+  const [entityStates, setEntityStates] = useState({});
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -39,9 +42,19 @@ function App() {
   useEffect(() => {
     const handleClick = (event) => {
       // Handle wiki link clicks
-      if (event.target.classList.contains('wiki-link')) {
+if (event.target.classList.contains('wiki-link')) {
         const term = event.target.dataset.term;
         if (definitions[term]) {
+          // Initialize entity state if it doesn't exist
+          if (definitions[term].type === 'entity' && !entityStates[term]) {
+            const initialState = {};
+            definitions[term].stats?.forEach((stat, index) => {
+              if (stat.type === 'bar') {
+                initialState[index] = stat.val;
+              }
+            });
+            setEntityStates(prev => ({ ...prev, [term]: initialState }));
+          }
           setContextCard({ term, data: definitions[term] });
         }
       }
@@ -68,15 +81,88 @@ function App() {
           showRollToast(result);
         }
       }
+      // Handle roll table button clicks
+      if (event.target.classList.contains('roll-table-button')) {
+        const dice = event.target.dataset.dice;
+        const tableId = event.target.dataset.tableId;
+        const table = document.querySelector(`.rollable-table[data-table-id="${tableId}"] table`);
+        
+        if (table) {
+          // Clear previous highlights
+          table.querySelectorAll('tr').forEach(row => row.classList.remove('highlighted-row'));
+          
+          // Check if button says "Clear"
+          if (event.target.textContent.includes('Clear')) {
+            event.target.textContent = `🎲 Roll Table (${dice})`;
+            return;
+          }
+          
+          // Roll the dice
+          const result = rollDice('1' + dice);
+          if (result) {
+            const rollValue = result.total;
+            
+            // Find matching row
+            const rows = table.querySelectorAll('tbody tr');
+            let matchedRow = null;
+            
+            rows.forEach(row => {
+              const firstCell = row.cells[0]?.textContent.trim();
+              
+              // Check for range (e.g., "1-2")
+              const rangeMatch = firstCell.match(/(\d+)-(\d+)/);
+              if (rangeMatch) {
+                const min = parseInt(rangeMatch[1]);
+                const max = parseInt(rangeMatch[2]);
+                if (rollValue >= min && rollValue <= max) {
+                  matchedRow = row;
+                }
+              }
+              // Check for exact match (e.g., "3")
+              else if (parseInt(firstCell) === rollValue) {
+                matchedRow = row;
+              }
+            });
+            
+            // Highlight the matched row
+            if (matchedRow) {
+              matchedRow.classList.add('highlighted-row');
+              event.target.textContent = '✕ Clear';
+            }
+            
+            // Show toast
+            showRollToast(result);
+          }
+        }
+      }
     };
 
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, [definitions]);
 
-  const showRollToast = (result) => {
-    // Simple alert for now - we'll make this prettier later
-    alert(`🎲 ${result.formula}: ${result.total}`);
+const showRollToast = (result) => {
+    setActiveToast(result);
+  };
+
+    const adjustStat = (entityName, statIndex, change) => {
+    setEntityStates(prev => {
+      const currentVal = prev[entityName]?.[statIndex] || contextCard.data.stats[statIndex].val;
+      const [current, max] = currentVal.split('/').map(Number);
+      const newCurrent = Math.max(0, Math.min(max, current + change));
+      
+      return {
+        ...prev,
+        [entityName]: {
+          ...prev[entityName],
+          [statIndex]: `${newCurrent}/${max}`
+        }
+      };
+    });
+  };
+
+  const getCurrentStatValue = (entityName, statIndex, originalValue) => {
+    return entityStates[entityName]?.[statIndex] || originalValue;
   };
 
   const scrollToSection = (id) => {
@@ -85,6 +171,8 @@ function App() {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  
 
   return (
     <div className="App">
@@ -143,16 +231,66 @@ function App() {
               <div className="context-card">
                 <h3>{contextCard.term}</h3>
                 
-                {contextCard.data.type === 'entity' && (
+{contextCard.data.type === 'entity' && (
                   <div className="entity-stats">
                     {contextCard.data.stats?.map((stat, index) => (
                       <div key={index} className="stat-item">
-                        <strong>{stat.label}:</strong> {stat.val || stat.formula}
+                        <div className="stat-header">
+                          <strong>{stat.label}</strong>
+                        </div>
+                        
+                        {stat.type === 'bar' && (
+                          <div className="stat-bar">
+                            <button 
+                              className="stat-button"
+                              onClick={() => adjustStat(contextCard.term, index, -1)}
+                            >
+                              −
+                            </button>
+                            <span className="stat-value">
+                              {getCurrentStatValue(contextCard.term, index, stat.val)}
+                            </span>
+                            <button 
+                              className="stat-button"
+                              onClick={() => adjustStat(contextCard.term, index, 1)}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                        
+                        {stat.type === 'static' && (
+                          <div className="stat-static">
+                            {stat.val}
+                          </div>
+                        )}
+                        
+                        {stat.type === 'roll' && (
+                          <button 
+                            className="stat-roll-button"
+                            onClick={() => {
+                              const result = rollDice(stat.formula);
+                              if (result) {
+                                const timestamp = new Date().toLocaleTimeString('en-US', { 
+                                  hour: 'numeric', 
+                                  minute: '2-digit'
+                                });
+                                setRollHistory(prev => [{
+                                  ...result,
+                                  timestamp,
+                                  id: Date.now()
+                                }, ...prev]);
+                                showRollToast(result);
+                              }
+                            }}
+                          >
+                            🎲 {stat.formula}
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
-                
                 {contextCard.data.type === 'lore' && (
                   <div className="lore-content">
                     <p>{contextCard.data.desc}</p>
@@ -193,6 +331,13 @@ function App() {
         <div className="welcome-message">
           <p>📜 Upload a .md file to begin your adventure</p>
         </div>
+      )}
+      
+      {activeToast && (
+        <Toast 
+          roll={activeToast} 
+          onClose={() => setActiveToast(null)} 
+        />
       )}
     </div>
   );

@@ -54,12 +54,40 @@ export function enhanceMarkdown(markdown, definitions) {
     }
   });
   
+  // Detect rollable tables and add markers
+  // Match tables that have dice notation in the header (d4, d6, d8, d10, d12, d20, d100)
+  const tablePattern = /(\|[^\n]+\|[\r\n]+\|[-:\s|]+\|[\r\n]+(?:\|[^\n]+\|[\r\n]+)+)/g;
+  processedMarkdown = processedMarkdown.replace(tablePattern, (match) => {
+    // Check if the table header contains dice notation
+    const headerMatch = match.match(/\|\s*([^\|]*[dD](\d+)[^\|]*)\s*\|/);
+    if (headerMatch) {
+      const diceSize = headerMatch[2];
+      return `{{ROLLTABLE::d${diceSize}}}${match}{{/ROLLTABLE}}`;
+    }
+    return match;
+  });
+  
   // SECOND: Convert markdown to HTML
   let html = marked(processedMarkdown);
   
   // THIRD: Replace our markers with actual clickable HTML
   html = html.replace(/\{\{WIKILINK::([^}]+)\}\}/g, (match, term) => {
     return `<span class="wiki-link" data-term="${term}">${term}</span>`;
+  });
+  
+  // Replace roll table markers with button and wrapper
+  html = html.replace(/\{\{ROLLTABLE::d(\d+)\}\}([\s\S]*?)\{\{\/ROLLTABLE\}\}/g, (match, diceSize, tableContent) => {
+    const tableId = `table-${Math.random().toString(36).substr(2, 9)}`;
+    return `
+      <div class="rollable-table-container" data-table-id="${tableId}">
+        <button class="roll-table-button" data-dice="d${diceSize}" data-table-id="${tableId}">
+          🎲 Roll Table (d${diceSize})
+        </button>
+        <div class="rollable-table" data-table-id="${tableId}">
+          ${tableContent}
+        </div>
+      </div>
+    `;
   });
   
   // FOURTH: Find dice notation patterns and make them clickable

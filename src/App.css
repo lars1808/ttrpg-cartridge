@@ -315,9 +315,90 @@ body {
   border-left: 3px solid #667eea;
 }
 
-.stat-item strong {
+.stat-item {
+  background-color: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
+}
+
+.stat-header {
+  margin-bottom: 0.5rem;
+}
+
+.stat-header strong {
   color: #374151;
-  margin-right: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stat-button {
+  background-color: #667eea;
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.stat-button:hover {
+  background-color: #5568d3;
+  transform: scale(1.05);
+}
+
+.stat-button:active {
+  transform: scale(0.95);
+}
+
+.stat-value {
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  min-width: 50px;
+  text-align: center;
+}
+
+.stat-static {
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #4b5563;
+  padding: 0.25rem 0;
+}
+
+.stat-roll-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.stat-roll-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.stat-roll-button:active {
+  transform: translateY(0);
 }
 
 /* Lore Content */
@@ -394,4 +475,68 @@ body {
   font-size: 0.9rem;
   font-style: italic;
   text-align: center;
+}
+/* Rollable Tables */
+.rollable-table-container {
+  margin: 2rem 0;
+}
+
+.roll-table-button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: all 0.2s;
+  display: inline-block;
+}
+
+.roll-table-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.roll-table-button:active {
+  transform: translateY(0);
+}
+
+.rollable-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.rollable-table th,
+.rollable-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+}
+
+.rollable-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.rollable-table tbody tr {
+  transition: all 0.3s;
+}
+
+.rollable-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.rollable-table tbody tr.highlighted-row {
+  background-color: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  font-weight: 600;
+}
+
+.rollable-table tbody tr.highlighted-row td {
+  border-color: #fbbf24;
 }
