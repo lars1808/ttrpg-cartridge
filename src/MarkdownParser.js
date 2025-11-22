@@ -33,24 +33,32 @@ export function parseCartridge(fileContent) {
 }
 
 export function enhanceMarkdown(markdown, definitions) {
-  // First, convert markdown to HTML
-  let html = marked(markdown);
+  // FIRST: Process [[Links]] before markdown conversion
+  let processedMarkdown = markdown;
   
-  // Find all [[Link]] patterns and make them interactive
-  html = html.replace(/\[\[([^\]]+)\]\]/g, (match, term) => {
+  // Replace [[Term]] with a special marker that won't be affected by markdown
+  processedMarkdown = processedMarkdown.replace(/\[\[([^\]]+)\]\]/g, (match, term) => {
     const trimmedTerm = term.trim();
     
-    // Check if this term exists in definitions
+    // Check if definition exists
     if (definitions[trimmedTerm]) {
-      // Make it a clickable link with special styling
-      return `<span class="wiki-link" data-term="${trimmedTerm}">${trimmedTerm}</span>`;
+      // Use a unique marker that markdown won't touch
+      return `{{WIKILINK::${trimmedTerm}}}`;
     } else {
-      // No definition found - render as plain text
+      // No definition - just return the term without brackets
       return trimmedTerm;
     }
   });
   
-  // Find dice notation patterns and make them clickable
+  // SECOND: Convert markdown to HTML
+  let html = marked(processedMarkdown);
+  
+  // THIRD: Replace our markers with actual clickable HTML
+  html = html.replace(/\{\{WIKILINK::([^}]+)\}\}/g, (match, term) => {
+    return `<span class="wiki-link" data-term="${term}">${term}</span>`;
+  });
+  
+  // FOURTH: Find dice notation patterns and make them clickable
   // Matches patterns like: 1d6, 2d10+3, 3d8-1
   html = html.replace(/(\d+d\d+(?:[+-]\d+)?)/g, (match) => {
     return `<span class="dice-roll" data-formula="${match}">${match}</span>`;
